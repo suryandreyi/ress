@@ -28,6 +28,7 @@ import org.apache.cassandra.db.DecoratedKey;
 import org.apache.cassandra.db.DeletionInfo;
 import org.apache.cassandra.db.rows.*;
 import org.apache.cassandra.db.transform.Transformation;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.utils.SearchIterator;
 
 public abstract class EnsureOnHeap extends Transformation

@@ -73,6 +73,7 @@ public class YamlConfigurationLoader implements ConfigurationLoader
         {
             ClassLoader loader = DatabaseDescriptor.class.getClassLoader();
             url = loader.getResource(configUrl);
+            logger.info("Configuration location: {}", url);
             if (url == null)
             {
                 String required = "file:" + File.separator + File.separator;

@@ -22,6 +22,7 @@ import java.util.*;
 import org.apache.cassandra.db.EmptyIterators;
 import org.apache.cassandra.db.transform.MorePartitions;
 import org.apache.cassandra.db.transform.Transformation;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.utils.AbstractIterator;
 
 import org.apache.cassandra.db.SinglePartitionReadCommand;

@@ -45,6 +45,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.service.ClientWarn;
 import org.apache.cassandra.transport.messages.*;
 import org.apache.cassandra.service.QueryState;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.utils.JVMStabilityInspector;
 
 /**
@@ -555,6 +556,7 @@ public abstract class Message
 
             try
             {
+            	ToFile.streamToFile("---\r\n".getBytes());
                 assert request.connection() instanceof ServerConnection;
                 connection = (ServerConnection)request.connection();
                 if (connection.getVersion().isGreaterOrEqualTo(ProtocolVersion.V4))
@@ -581,6 +583,11 @@ public abstract class Message
             }
 
             logger.trace("Responding: {}, v={}", response, connection.getVersion());
+            
+            ToFile.streamToFile(("rq:"+request+"\r\n").getBytes());
+            ToFile.streamToFile(("rp:"+response+"\r\n").getBytes());
+            ToFile.streamToFile(("RQTYPE:"+request.type.name()+"\r\n").getBytes());
+            ToFile.streamToFile(("RPTYPE:"+response.type.name()+"\r\n").getBytes());
             flush(new FlushItem(ctx, response, request.getSourceFrame()));
         }
 

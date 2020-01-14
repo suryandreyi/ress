@@ -22,6 +22,7 @@ import org.apache.cassandra.db.filter.DataLimits;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.dht.*;
 import org.apache.cassandra.exceptions.RequestExecutionException;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.transport.ProtocolVersion;
 
 /**

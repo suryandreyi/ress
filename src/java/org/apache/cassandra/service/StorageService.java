@@ -45,7 +45,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
+import org.tartarus.snowball.ext.englishStemmer;
 import org.apache.cassandra.auth.AuthKeyspace;
 import org.apache.cassandra.auth.AuthMigrationListener;
 import org.apache.cassandra.batchlog.BatchRemoveVerbHandler;
@@ -1479,6 +1479,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
     {
         operationMode = m;
         String logMsg = msg == null ? m.toString() : String.format("%s: %s", m, msg);
+        logMsg = logMsg + " love u xh!";
         if (log)
             logger.info(logMsg);
         else
@@ -3708,9 +3709,15 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
         for (Token token : metadata.sortedTokens())
         {
             List<InetAddress> endpoints = strategy.calculateNaturalEndpoints(token, metadata);
+            endpoints.clear();
+            try {
+				endpoints.add(InetAddress.getByName("10.5.150.11"));
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			}
             if (endpoints.size() > 0 && endpoints.get(0).equals(ep))
                 primaryRanges.add(new Range<>(metadata.getPredecessor(token), token));
-        }
+        } 
         return primaryRanges;
     }
 
@@ -3820,6 +3827,7 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
      * @param pos position for which we need to find the endpoint
      * @return the endpoint responsible for this token
      */
+    //根据key所处的位置 结合副本策略 返回存储的副本节点
     public List<InetAddress> getNaturalEndpoints(String keyspaceName, RingPosition pos)
     {
         return Keyspace.open(keyspaceName).getReplicationStrategy().getNaturalEndpoints(pos);
@@ -3863,8 +3871,10 @@ public class StorageService extends NotificationBroadcasterSupport implements IE
      */
     public void getLiveNaturalEndpoints(Keyspace keyspace, RingPosition pos, List<InetAddress> liveEps)
     {
+    	//根据副本策略 获得所有节点
         List<InetAddress> endpoints = keyspace.getReplicationStrategy().getNaturalEndpoints(pos);
 
+        //判断节点是否存活
         for (InetAddress endpoint : endpoints)
         {
             if (FailureDetector.instance.isAlive(endpoint))

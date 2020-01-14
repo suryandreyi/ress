@@ -33,6 +33,7 @@ import org.apache.cassandra.db.transform.StoppingTransformation;
 import org.apache.cassandra.db.transform.Transformation;
 import org.apache.cassandra.io.util.DataInputPlus;
 import org.apache.cassandra.io.util.DataOutputPlus;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.utils.ByteBufferUtil;
 
 /**

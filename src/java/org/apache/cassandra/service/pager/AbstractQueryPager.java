@@ -24,6 +24,7 @@ import org.apache.cassandra.db.partitions.*;
 import org.apache.cassandra.db.filter.DataLimits;
 import org.apache.cassandra.db.transform.Transformation;
 import org.apache.cassandra.service.ClientState;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.transport.ProtocolVersion;
 
 abstract class AbstractQueryPager implements QueryPager
@@ -66,6 +67,7 @@ abstract class AbstractQueryPager implements QueryPager
 
         pageSize = Math.min(pageSize, remaining);
         Pager pager = new RowPager(limits.forPaging(pageSize), command.nowInSec());
+        
         return Transformation.apply(nextPageReadCommand(pageSize).execute(consistency, clientState, queryStartNanoTime), pager);
     }
 

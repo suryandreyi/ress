@@ -103,14 +103,18 @@ public abstract class AbstractReplicationStrategy
      */
     public ArrayList<InetAddress> getNaturalEndpoints(RingPosition searchPosition)
     {
+    	//查询的token
         Token searchToken = searchPosition.getToken();
+        //在整个集群的 Token 环中根据二分查找算法找到与给定的 Token 最接近的一个节点
         Token keyToken = TokenMetadata.firstToken(tokenMetadata.sortedTokens(), searchToken);
+        //根据缓存获得节点地址列表
         ArrayList<InetAddress> endpoints = getCachedEndpoints(keyToken);
         if (endpoints == null)
         {
             TokenMetadata tm = tokenMetadata.cachedOnlyTokenMap();
             // if our cache got invalidated, it's possible there is a new token to account for too
             keyToken = TokenMetadata.firstToken(tm.sortedTokens(), searchToken);
+            //根据副本策略查找副本节点
             endpoints = new ArrayList<InetAddress>(calculateNaturalEndpoints(searchToken, tm));
             cachedEndpoints.put(keyToken, endpoints);
         }

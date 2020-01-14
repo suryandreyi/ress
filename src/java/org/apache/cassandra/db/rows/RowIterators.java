@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import org.apache.cassandra.config.CFMetaData;
 import org.apache.cassandra.db.filter.ColumnFilter;
 import org.apache.cassandra.db.transform.Transformation;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.utils.FBUtilities;
 
 /**

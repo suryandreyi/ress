@@ -167,7 +167,7 @@ public class NetworkTopologyStrategy extends AbstractReplicationStrategy
 
             if (rf <= 0 || nodeCount <= 0)
                 continue;
-
+            									//配置的数据中心副本数	该数据中心机架数量     该数据中心节点数量   副本地址    机架
             DatacenterEndpoints dcEndpoints = new DatacenterEndpoints(rf, sizeOrZero(racks.get(dc)), nodeCount, replicas, seenRacks);
             dcs.put(dc, dcEndpoints);
             ++dcsToFill;

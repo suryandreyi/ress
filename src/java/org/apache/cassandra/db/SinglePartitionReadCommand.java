@@ -53,6 +53,7 @@ import org.apache.cassandra.schema.IndexMetadata;
 import org.apache.cassandra.service.CacheService;
 import org.apache.cassandra.service.ClientState;
 import org.apache.cassandra.service.StorageProxy;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.service.pager.*;
 import org.apache.cassandra.thrift.ThriftResultsMerger;
 import org.apache.cassandra.tracing.Tracing;
@@ -1278,9 +1279,8 @@ public class SinglePartitionReadCommand extends ReadCommand
 
         public QueryPager getPager(PagingState pagingState, ProtocolVersion protocolVersion)
         {
-            if (commands.size() == 1)
-                return SinglePartitionReadCommand.getPager(commands.get(0), pagingState, protocolVersion);
-
+            if (commands.size() == 1) 
+            	return SinglePartitionReadCommand.getPager(commands.get(0), pagingState, protocolVersion);
             return new MultiPartitionPager(this, pagingState, protocolVersion);
         }
 

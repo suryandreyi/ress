@@ -17,6 +17,13 @@
  */
 package org.apache.cassandra.cql3.statements;
 
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -81,6 +88,7 @@ import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.db.view.View;
 import org.apache.cassandra.dht.AbstractBounds;
+import org.apache.cassandra.dht.IPartitioner;
 import org.apache.cassandra.exceptions.InvalidRequestException;
 import org.apache.cassandra.exceptions.RequestExecutionException;
 import org.apache.cassandra.exceptions.RequestValidationException;
@@ -90,9 +98,11 @@ import org.apache.cassandra.serializers.MarshalException;
 import org.apache.cassandra.service.ClientState;
 import org.apache.cassandra.service.ClientWarn;
 import org.apache.cassandra.service.QueryState;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.service.pager.AggregationQueryPager;
 import org.apache.cassandra.service.pager.PagingState;
 import org.apache.cassandra.service.pager.QueryPager;
+import org.apache.cassandra.thrift.Cassandra.AsyncProcessor.system_add_column_family;
 import org.apache.cassandra.thrift.ThriftValidation;
 import org.apache.cassandra.transport.ProtocolVersion;
 import org.apache.cassandra.transport.messages.ResultMessage;
@@ -272,7 +282,6 @@ public class SelectStatement implements CQLStatement
     {
         ConsistencyLevel cl = options.getConsistency();
         checkNotNull(cl, "Invalid empty consistency level");
-
         cl.validateForRead(keyspace());
 
         int nowInSec = FBUtilities.nowInSeconds();
@@ -281,8 +290,9 @@ public class SelectStatement implements CQLStatement
         int pageSize = options.getPageSize();
         ReadQuery query = getQuery(options, nowInSec, userLimit, userPerPartitionLimit, pageSize);
 
-        if (aggregationSpec == null && (pageSize <= 0 || (query.limits().count() <= pageSize)))
-            return execute(query, options, state, nowInSec, userLimit, queryStartNanoTime);
+        if (aggregationSpec == null && (pageSize <= 0 || (query.limits().count() <= pageSize))) {
+        	return execute(query, options, state, nowInSec, userLimit, queryStartNanoTime);
+        }
 
         QueryPager pager = getPager(query, options);
 
@@ -300,9 +310,9 @@ public class SelectStatement implements CQLStatement
 
         DataLimits limit = getDataLimits(userLimit, perPartitionLimit, pageSize);
 
-        if (isPartitionRangeQuery)
-            return getRangeCommand(options, limit, nowInSec);
-
+        if (isPartitionRangeQuery) {
+        	return getRangeCommand(options, limit, nowInSec);
+        }
         return getSliceCommands(options, limit, nowInSec);
     }
 
@@ -312,8 +322,10 @@ public class SelectStatement implements CQLStatement
                                        int nowInSec,
                                        int userLimit, long queryStartNanoTime) throws RequestValidationException, RequestExecutionException
     {
+    	//获取结果
         try (PartitionIterator data = query.execute(options.getConsistency(), state.getClientState(), queryStartNanoTime))
         {
+        	//按要求对结果封装
             return processResults(data, options, nowInSec, userLimit);
         }
     }
@@ -411,6 +423,7 @@ public class SelectStatement implements CQLStatement
                   + " you must either remove the ORDER BY or the IN and sort client side, or disable paging for this query");
 
         ResultMessage.Rows msg;
+        
         try (PartitionIterator page = pager.fetchPage(pageSize, queryStartNanoTime))
         {
             msg = processResults(page, options, nowInSec, userLimit);
@@ -473,9 +486,9 @@ public class SelectStatement implements CQLStatement
     {
         QueryPager pager = query.getPager(options.getPagingState(), options.getProtocolVersion());
 
-        if (aggregationSpec == null || query == ReadQuery.EMPTY)
-            return pager;
-
+        if (aggregationSpec == null || query == ReadQuery.EMPTY) 
+        	return pager;
+    
         return new AggregationQueryPager(pager, query.limits());
     }
 
@@ -513,12 +526,13 @@ public class SelectStatement implements CQLStatement
     private ReadQuery getSliceCommands(QueryOptions options, DataLimits limit, int nowInSec) throws RequestValidationException
     {
         Collection<ByteBuffer> keys = restrictions.getPartitionKeys(options);
-        if (keys.isEmpty())
-            return ReadQuery.EMPTY;
+        if (keys.isEmpty()) 
+        	return ReadQuery.EMPTY;        	
 
         ClusteringIndexFilter filter = makeClusteringIndexFilter(options);
-        if (filter == null)
-            return ReadQuery.EMPTY;
+        if (filter == null) 
+        	return ReadQuery.EMPTY;        	
+        
 
         RowFilter rowFilter = getRowFilter(options);
 
@@ -532,7 +546,7 @@ public class SelectStatement implements CQLStatement
             ColumnFilter cf = (cfm.isSuper() && cfm.isDense()) ? SuperColumnCompatibility.getColumnFilter(cfm, options, restrictions.getSuperColumnRestrictions()) : queriedColumns;
             commands.add(SinglePartitionReadCommand.create(cfm, nowInSec, cf, rowFilter, limit, dk, filter));
         }
-
+ 
         return new SinglePartitionReadCommand.Group(commands, limit);
     }
 
@@ -781,22 +795,20 @@ public class SelectStatement implements CQLStatement
                               int nowInSec,
                               int userLimit) throws InvalidRequestException
     {
-        Selection.ResultSetBuilder result = selection.resultSetBuilder(options, parameters.isJson, aggregationSpec);
-
+        Selection.ResultSetBuilder result = selection.resultSetBuilder(options, parameters.isJson, aggregationSpec);        
+        
         while (partitions.hasNext())
         {
             try (RowIterator partition = partitions.next())
             {
-                processPartition(partition, options, result, nowInSec);
+                processPartition(partition, options, result, nowInSec);	
             }
         }
 
         ResultSet cqlRows = result.build();
-
         orderResults(cqlRows);
 
         cqlRows.trim(userLimit);
-
         return cqlRows;
     }
 
@@ -819,7 +831,7 @@ public class SelectStatement implements CQLStatement
     {
         if (cfm.isSuper() && cfm.isDense())
         {
-            SuperColumnCompatibility.processPartition(cfm, selection, partition, result, options.getProtocolVersion(), restrictions.getSuperColumnRestrictions(), options);
+            SuperColumnCompatibility.processPartition(cfm, selection, partition, result, options.getProtocolVersion(), restrictions.getSuperColumnRestrictions(), options);		
             return;
         }
 
@@ -832,7 +844,7 @@ public class SelectStatement implements CQLStatement
         // then provided the select was a full partition selection (either by partition key and/or by static column),
         // we want to include static columns and we're done.
         if (!partition.hasNext())
-        {
+        {        	
             if (!staticRow.isEmpty() && (queriesFullPartitions() || cfm.isStaticCompactTable()))
             {
                 result.newRow(partition.partitionKey(), staticRow.clustering());
@@ -855,12 +867,15 @@ public class SelectStatement implements CQLStatement
         }
 
         while (partition.hasNext())
-        {
+        {	  	
             Row row = partition.next();
+ 
+            
             result.newRow( partition.partitionKey(), row.clustering());
             // Respect selection order
             for (ColumnDefinition def : selection.getColumns())
             {
+            	
                 switch (def.kind)
                 {
                     case PARTITION_KEY:

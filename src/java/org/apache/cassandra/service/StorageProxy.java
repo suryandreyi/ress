@@ -19,6 +19,7 @@ package org.apache.cassandra.service;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.*;
@@ -49,9 +50,11 @@ import org.apache.cassandra.db.*;
 import org.apache.cassandra.db.filter.DataLimits;
 import org.apache.cassandra.db.filter.TombstoneOverwhelmingException;
 import org.apache.cassandra.db.partitions.*;
+import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.db.view.ViewUtils;
 import org.apache.cassandra.dht.*;
+import org.apache.cassandra.dht.Token.TokenFactory;
 import org.apache.cassandra.exceptions.*;
 import org.apache.cassandra.gms.FailureDetector;
 import org.apache.cassandra.gms.Gossiper;
@@ -1057,6 +1060,7 @@ public class StorageProxy implements StorageProxyMBean
      * @param callback an optional callback to be run if and when the write is
      * @param queryStartNanoTime the value of System.nanoTime() when the query started to be processed
      */
+    //TODO
     public static AbstractWriteResponseHandler<IMutation> performWrite(IMutation mutation,
                                                                        ConsistencyLevel consistency_level,
                                                                        String localDataCenter,
@@ -1066,13 +1070,31 @@ public class StorageProxy implements StorageProxyMBean
                                                                        long queryStartNanoTime)
     throws UnavailableException, OverloadedException
     {
-        String keyspaceName = mutation.getKeyspaceName();
-        AbstractReplicationStrategy rs = Keyspace.open(keyspaceName).getReplicationStrategy();
+		String keyspaceName = mutation.getKeyspaceName();
+		AbstractReplicationStrategy rs = Keyspace.open(keyspaceName).getReplicationStrategy();
 
-        Token tk = mutation.key().getToken();
-        List<InetAddress> naturalEndpoints = StorageService.instance.getNaturalEndpoints(keyspaceName, tk);
-        Collection<InetAddress> pendingEndpoints = StorageService.instance.getTokenMetadata().pendingEndpointsFor(tk, keyspaceName);
-
+		Token tk = mutation.key().getToken();
+		List<InetAddress> naturalEndpoints = StorageService.instance.getNaturalEndpoints(keyspaceName, tk);
+		Collection<InetAddress> pendingEndpoints = StorageService.instance.getTokenMetadata().pendingEndpointsFor(tk, keyspaceName);
+       
+        String s = tk.toString();      
+//        if(s.endsWith("00000004")) {
+//        	naturalEndpoints.clear();
+//        	try {
+//				naturalEndpoints.add(InetAddress.getByName("127.0.0.1"));
+//			} catch (UnknownHostException e) {
+//				// TODO 自动生成的 catch 块
+//				e.printStackTrace();
+//			}
+//        	
+//        }
+        naturalEndpoints.clear();
+        try {
+			naturalEndpoints.add(InetAddress.getByName("10.5.150.11"));
+		} catch (UnknownHostException e) {
+			e.printStackTrace();
+		}
+        
         AbstractWriteResponseHandler<IMutation> responseHandler = rs.getWriteResponseHandler(naturalEndpoints, pendingEndpoints, consistency_level, callback, writeType, queryStartNanoTime);
 
         // exit early if we can't fulfill the CL at this time
@@ -1675,6 +1697,7 @@ public class StorageProxy implements StorageProxyMBean
             // might not honor it and so we should enforce it
             if (group.commands.size() > 1)
                 result = group.limits().filter(result, group.nowInSec(), group.selectsFullPartition(), enforceStrictLiveness);
+            
             return result;
         }
         catch (UnavailableException e)
@@ -1910,7 +1933,9 @@ public class StorageProxy implements StorageProxyMBean
 
     public static List<InetAddress> getLiveSortedEndpoints(Keyspace keyspace, RingPosition pos)
     {
+    	//根据key所处的范围 获得所有存储key的节点
         List<InetAddress> liveEndpoints = StorageService.instance.getLiveNaturalEndpoints(keyspace, pos);
+        //根据snitch策略 返回具有优先级的节点列表
         DatabaseDescriptor.getEndpointSnitch().sortByProximity(FBUtilities.getBroadcastAddress(), liveEndpoints);
         return liveEndpoints;
     }
@@ -2273,7 +2298,6 @@ public class StorageProxy implements StorageProxyMBean
         Tracing.trace("Submitting range requests on {} ranges with a concurrency of {} ({} rows per range expected)", ranges.rangeCount(), concurrencyFactor, resultsPerRange);
 
         // Note that in general, a RangeCommandIterator will honor the command limit for each range, but will not enforce it globally.
-
         return command.limits().filter(command.postReconciliationProcessing(new RangeCommandIterator(ranges, command, concurrencyFactor, keyspace, consistencyLevel, queryStartNanoTime)),
                                        command.nowInSec(),
                                        command.selectsFullPartition(),

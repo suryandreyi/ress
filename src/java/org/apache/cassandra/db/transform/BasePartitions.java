@@ -24,6 +24,7 @@ import java.util.Collections;
 
 import org.apache.cassandra.db.partitions.BasePartitionIterator;
 import org.apache.cassandra.db.rows.BaseRowIterator;
+import org.apache.cassandra.service.ToFile;
 import org.apache.cassandra.utils.Throwables;
 
 import static org.apache.cassandra.utils.Throwables.merge;
@@ -92,8 +93,8 @@ implements BasePartitionIterator<R>
                 while (!stop.isSignalled && input.hasNext())
                 {
                     next = input.next();
-                    for (int i = 0 ; next != null & i < len ; i++)
-                        next = fs[i].applyToPartition(next);
+                    for (int i = 0 ; next != null & i < len ; i++) 
+                    	next = fs[i].applyToPartition(next);
 
                     if (next != null)
                     {

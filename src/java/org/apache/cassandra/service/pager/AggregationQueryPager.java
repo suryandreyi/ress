@@ -28,6 +28,7 @@ import org.apache.cassandra.db.partitions.PartitionIterator;
 import org.apache.cassandra.db.rows.Row;
 import org.apache.cassandra.db.rows.RowIterator;
 import org.apache.cassandra.service.ClientState;
+import org.apache.cassandra.service.ToFile;
 
 /**
  * {@code QueryPager} that takes care of fetching the pages for aggregation queries.
@@ -55,9 +56,9 @@ public final class AggregationQueryPager implements QueryPager
                                        ClientState clientState,
                                        long queryStartNanoTime)
     {
-        if (limits.isGroupByLimit())
-            return new GroupByPartitionIterator(pageSize, consistency, clientState, queryStartNanoTime);
-
+        if (limits.isGroupByLimit()) 
+        	return new GroupByPartitionIterator(pageSize, consistency, clientState, queryStartNanoTime);        	
+        
         return new AggregationPartitionIterator(pageSize, consistency, clientState, queryStartNanoTime);
     }
 

@@ -603,7 +603,6 @@ public abstract class Selection
                   metadata,
                   factories.containsWritetimeSelectorFactory(),
                   factories.containsTTLSelectorFactory());
-
             this.factories = factories;
         }
 

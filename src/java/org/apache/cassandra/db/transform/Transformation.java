@@ -26,6 +26,7 @@ import org.apache.cassandra.db.PartitionColumns;
 import org.apache.cassandra.db.partitions.PartitionIterator;
 import org.apache.cassandra.db.partitions.UnfilteredPartitionIterator;
 import org.apache.cassandra.db.rows.*;
+import org.apache.cassandra.service.ToFile;
 
 /**
  * We have a single common superclass for all Transformations to make implementation efficient.
@@ -140,7 +141,7 @@ public abstract class Transformation<I extends BaseRowIterator<?>>
         return add(mutable(iterator), transformation);
     }
     public static RowIterator apply(RowIterator iterator, Transformation<?> transformation)
-    {
+    {	
         return add(mutable(iterator), transformation);
     }
 
